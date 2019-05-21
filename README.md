@@ -77,6 +77,15 @@ Update all outdated dependencies at once:
 yarn ncuu
 ```
 
+## TODO
+
+Some desired things in our new version here:
+
+* Move object generation and control into a required file. Too much in application.js right now.
+* Force lint success on commit.
+* Write some documentation on how to use the linter to begin with.
+* Add gamepad support: https://github.com/carldanley/node-gamepad
+
 ## Credits
 
 The setup of this starter project was inspired by two snippets on Codepen: [this one](http://codepen.io/mo4_9/pen/VjqRQX) and [this one](https://codepen.io/iamphill/pen/jPYorE).
