@@ -1,6 +1,5 @@
 import * as THREE from "three";
 // TODO: OrbitControls import three.js on its own, so the webpack bundle includes three.js twice!
-import OrbitControls from "orbit-controls-es6";
 import { Interaction } from "three.interaction";
 import bindKeys from "./keys.js";
 
@@ -23,7 +22,6 @@ export class Application {
     } else {
       this.createContainer();
     }
-    this.createTooltip();
     this.showHelpers = opts.showHelpers ? true : false;
     this.textureLoader = new THREE.TextureLoader();
 
@@ -42,11 +40,8 @@ export class Application {
    * Bind event handlers to the Application instance.
    */
   bindEventHandlers() {
-    this.handleClick = this.handleClick.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleResize = this.handleResize.bind(this);
-    this.showTooltip = this.showTooltip.bind(this);
-    this.hideTooltip = this.hideTooltip.bind(this);
     bindKeys(this);
   }
 
@@ -60,29 +55,13 @@ export class Application {
     if (this.showHelpers) {
       this.setupHelpers();
     }
-    this.setupRay();
-    this.setupControls();
     this.setupGUI();
 
     this.addFloor(100, 100);
-    this.addCube(20);
-    this.addCustomMesh();
-
-    const particleSpecs = { spread: { x: 50, y: 100, z: 50 } };
-    this.addParticleSystem(300, 5, particleSpecs);
-
-    const boxSpecs = {
-      depth: 20,
-      height: 10,
-      spread: { x: 20, y: 20, z: 50 },
-      width: 5,
-    };
-    this.addGroupObject(10, boxSpecs);
   }
 
   render() {
-    this.controls.update();
-    this.updateCustomMesh();
+    // this.updateCustomMesh();
     this.renderer.render(this.scene, this.camera);
     // when render is invoked via requestAnimationFrame(this.render) there is
     // no 'this', so either we bind it explicitly or use an es6 arrow function.
@@ -105,34 +84,6 @@ export class Application {
     this.container = div;
   }
 
-  createTooltip() {
-    const elements = document.getElementsByClassName("app");
-    if (elements.length !== 1) {
-      alert("You need to have exactly ONE <div class='app' /> in your HTML");
-    }
-    const app = elements[0];
-    const div = document.createElement("div");
-    div.setAttribute("class", "tooltip");
-    app.appendChild(div);
-    this.tooltip = div;
-  }
-
-  handleClick(event) {
-    const [x, y] = this.getNDCCoordinates(event, true);
-    this.raycaster.setFromCamera({ x, y }, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.scene.children);
-
-    if (intersects.length > 0) {
-      const hexColor = Math.random() * 0xffffff;
-      const intersection = intersects[0];
-      intersection.object.material.color.setHex(hexColor);
-
-      const { direction, origin } = this.raycaster.ray;
-      const arrow = new THREE.ArrowHelper(direction, origin, 100, hexColor);
-      this.scene.add(arrow);
-    }
-  }
-
   handleMouseMove(event) {
     const [x, y] = this.getNDCCoordinates(event);
   }
@@ -143,19 +94,6 @@ export class Application {
     this.camera.aspect = clientWidth / clientHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(clientWidth, clientHeight);
-  }
-
-  showTooltip(interactionEvent) {
-    const { name, uuid, type } = interactionEvent.target;
-    const { x, y } = interactionEvent.data.global;
-    const [xScreen, yScreen] = this.getScreenCoordinates(x, y);
-    this.tooltip.innerHTML = `<h4>${name} (${type})</h4><br><span>UUID: ${uuid}</span><br><span><em>Click to cast a ray</em></span>`;
-    const style = `left: ${xScreen}px; top: ${yScreen}px; visibility: visible; opacity: 0.8`;
-    this.tooltip.style = style;
-  }
-
-  hideTooltip(interactionEvent) {
-    this.tooltip.style = "visibility: hidden";
   }
 
   /**
@@ -173,7 +111,7 @@ export class Application {
     this.scene.background = color;
     this.scene.fog = null;
     // Any Three.js object in the scene (and the scene itself) can have a name.
-    this.scene.name = "My Three.js Scene";
+    this.scene.name = "Watabou";
   }
 
   /**
@@ -199,14 +137,14 @@ export class Application {
   }
 
   setupCamera() {
-    const fov = 75;
+    const fov = 1;
     const { clientWidth, clientHeight } = this.container;
     const aspect = clientWidth / clientHeight;
     const near = 0.1;
-    const far = 10000;
+    const far = 1000000;
     this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
     this.camera.name = CAMERA_NAME;
-    this.camera.position.set(100, 100, 100);
+    this.camera.position.set(0, 0, 5000);
     this.camera.lookAt(this.scene.position);
   }
 
@@ -262,10 +200,6 @@ export class Application {
     this.scene.add(spotLightCameraHelper);
   }
 
-  setupRay() {
-    this.raycaster = new THREE.Raycaster();
-  }
-
   /**
    * Add a floor object to the scene.
    * Note: Three.js's TextureLoader does not support progress events.
@@ -284,12 +218,9 @@ export class Application {
       const floor = new THREE.Mesh(geometry, material);
       floor.name = "Floor";
       floor.position.y = -0.5;
-      floor.rotation.x = Math.PI / 2;
       this.scene.add(floor);
 
       floor.cursor = "pointer";
-      floor.on("mouseover", this.showTooltip);
-      floor.on("mouseout", this.hideTooltip);
     };
 
     const onProgress = undefined;
@@ -298,14 +229,6 @@ export class Application {
       alert(`Impossible to load the texture ${checkerboard}`);
     };
     this.textureLoader.load(checkerboard, onLoad, onProgress, onError);
-  }
-
-  setupControls() {
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enabled = true;
-    this.controls.maxDistance = 1500;
-    this.controls.minDistance = 0;
-    this.controls.autoRotate = true;
   }
 
   setupGUI() {
@@ -323,8 +246,8 @@ export class Application {
     gui
       .add(this.camera.position, "z")
       .name("Camera Z")
-      .min(0)
-      .max(100);
+      .min(1000)
+      .max(10000);
   }
 
   /**
@@ -372,84 +295,6 @@ export class Application {
     // attribute buffers are not refreshed automatically. To update custom
     // attributes we need to set the needsUpdate flag to true
     customMesh.geometry.attributes.vertexDisplacement.needsUpdate = true;
-  }
-
-  addCube(side) {
-    const geometry = new THREE.CubeGeometry(side, side, side);
-    const material = new THREE.MeshLambertMaterial({ color: 0xfbbc05 });
-    const cube = new THREE.Mesh(geometry, material);
-    cube.name = "Cube";
-    cube.position.set(0, side / 2, 0);
-    this.scene.add(cube);
-
-    cube.cursor = "pointer";
-    cube.on("mouseover", this.showTooltip);
-    cube.on("mouseout", this.hideTooltip);
-  }
-
-  /**
-   * Add a particle system that uses the same texture for each particle.
-   * The texture is asynchronously loaded.
-   * Note: Three.js's TextureLoader does not support progress events.
-   * @see https://threejs.org/docs/#api/en/loaders/TextureLoader
-   */
-  addParticleSystem(numParticles, particleSize, particleSpecs) {
-    const geometry = new THREE.Geometry();
-    const particles = Array(numParticles)
-      .fill(particleSpecs)
-      .map(makeParticle);
-    geometry.vertices = particles;
-
-    const onLoad = texture => {
-      const material = new THREE.PointsMaterial({
-        // alphaTest's default is 0 and the particles overlap. Any value > 0
-        // prevents the particles from overlapping.
-        alphaTest: 0.5,
-        map: texture,
-        size: particleSize,
-        transparent: true,
-      });
-
-      const particleSystem = new THREE.Points(geometry, material);
-      particleSystem.name = "Stars";
-      particleSystem.position.set(-50, 50, -50);
-      this.scene.add(particleSystem);
-
-      particleSystem.cursor = "pointer";
-      particleSystem.on("mouseover", this.showTooltip);
-      particleSystem.on("mouseout", this.hideTooltip);
-    };
-
-    const onProgress = undefined;
-
-    const onError = event => {
-      alert(`Impossible to load the texture ${star}`);
-    };
-
-    this.textureLoader.load(star, onLoad, onProgress, onError);
-  }
-
-  /**
-   * Add a Three.js Group object to the scene.
-   */
-  addGroupObject(numBoxes, boxSpecs) {
-    const group = new THREE.Group();
-    group.name = "Group of Boxes";
-    const { depth, height, spread, width } = boxSpecs;
-    const geometry = new THREE.BoxGeometry(width, height, depth);
-
-    const meshes = Array(numBoxes)
-      .fill({ geometry, spread })
-      .map(makeMesh);
-    for (const mesh of meshes) {
-      group.add(mesh);
-    }
-    group.position.set(50, 20, 50);
-    this.scene.add(group);
-
-    group.cursor = "pointer";
-    group.on("mouseover", this.showTooltip);
-    group.on("mouseout", this.hideTooltip);
   }
 
   /**
