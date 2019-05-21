@@ -2,6 +2,7 @@ import * as THREE from "three";
 // TODO: OrbitControls import three.js on its own, so the webpack bundle includes three.js twice!
 import OrbitControls from "orbit-controls-es6";
 import { Interaction } from "three.interaction";
+import bindKeys from "./keys.js";
 
 import * as Detector from "../js/vendor/Detector";
 import * as DAT from "../js/vendor/dat.gui.min";
@@ -46,6 +47,7 @@ export class Application {
     this.handleResize = this.handleResize.bind(this);
     this.showTooltip = this.showTooltip.bind(this);
     this.hideTooltip = this.hideTooltip.bind(this);
+    bindKeys(this);
   }
 
   init() {

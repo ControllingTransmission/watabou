@@ -26,6 +26,7 @@
     "test": "jest --verbose --no-cache"
   },
   "dependencies": {
+    "mousetrap": "^1.6.3",
     "orbit-controls-es6": "2.0.0",
     "three": "0.102.1",
     "three.interaction": "0.2.2"
