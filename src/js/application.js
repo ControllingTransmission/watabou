@@ -234,15 +234,11 @@ export class Application {
   setupGUI() {
     const gui = new DAT.GUI();
     gui
-      .add(this.camera.position, "x")
-      .name("Camera X")
+      .add(this.camera, "fov")
+      .name("Camera FOV")
       .min(0)
-      .max(100);
-    gui
-      .add(this.camera.position, "y")
-      .name("Camera Y")
-      .min(0)
-      .max(100);
+      .max(100)
+      .onChange(() => { this.camera.updateProjectionMatrix() });
     gui
       .add(this.camera.position, "z")
       .name("Camera Z")
