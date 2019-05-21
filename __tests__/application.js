@@ -33,7 +33,6 @@ describe("Three.js application", () => {
     new Application();
     const app = document.querySelector("body > .app");
     expect(app.firstElementChild).toHaveClass("canvas-container");
-    expect(app.lastElementChild).toHaveClass("tooltip");
     expect(document.querySelector(".canvas-container")).toBeInTheDocument();
   });
 
@@ -47,8 +46,7 @@ describe("Three.js application", () => {
     expect(app.firstElementChild).toHaveClass(customClass);
     expect(document.querySelector(`.${customClass}`)).toBeInTheDocument();
     expect(document.querySelector(".canvas-container")).not.toBeInTheDocument();
-    expect(document.querySelector(".tooltip")).toBeInTheDocument();
-    expect(app.childElementCount).toBe(2);
+    expect(app.childElementCount).toBe(1);
   });
 
   it("creates a visible <div>", () => {
