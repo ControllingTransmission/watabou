@@ -154,15 +154,6 @@ module.exports = (env, argv) => {
         PUBLIC_URL,
       },
     }),
-    new HtmlWebpackPlugin({
-      chunks: ["aboutPage"],
-      filename: "about.html",
-      hash: true,
-      template: path.join(__dirname, "src", "templates", "about.html"),
-      templateParameters: {
-        PUBLIC_URL,
-      },
-    }),
     new MiniCssExtractPlugin({
       filename: "[hash].css",
       chunkFilename: "[id].bundle.css",
@@ -193,7 +184,6 @@ module.exports = (env, argv) => {
     devServer,
     devtool: isProduction ? "source-map" : "cheap-source-map",
     entry: {
-      aboutPage: "./src/js/about.js",
       homePage: "./src/js/index.js",
     },
     module: {
