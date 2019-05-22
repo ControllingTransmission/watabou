@@ -47,6 +47,7 @@ export class Application {
 
   init() {
     window.addEventListener("resize", this.handleResize);
+    this.setupClock();
     this.setupScene();
     this.setupRenderer();
     this.setupCamera();
@@ -67,6 +68,7 @@ export class Application {
     // no 'this', so either we bind it explicitly or use an es6 arrow function.
     // requestAnimationFrame(this.render.bind(this));
     requestAnimationFrame(() => this.render());
+    // this.updateFOV();
   }
 
   /**
@@ -94,6 +96,10 @@ export class Application {
     this.camera.aspect = clientWidth / clientHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(clientWidth, clientHeight);
+  }
+
+  setupClock() {
+    this.clock = new THREE.Clock();
   }
 
   /**
@@ -231,6 +237,15 @@ export class Application {
     this.textureLoader.load(checkerboard, onLoad, onProgress, onError);
   }
 
+  adjustFOVToObject(object, fov) {
+    let o = object.geometry.parameters.width / 2;
+    let a = o / Math.tan(fov / 75 / 2);
+
+    this.camera.fov = fov;
+    this.camera.position.z = a;
+    this.camera.updateProjectionMatrix();
+  }
+
   setupGUI() {
     const gui = new DAT.GUI();
     gui
@@ -291,6 +306,11 @@ export class Application {
     // attribute buffers are not refreshed automatically. To update custom
     // attributes we need to set the needsUpdate flag to true
     customMesh.geometry.attributes.vertexDisplacement.needsUpdate = true;
+  }
+
+  updateFOV() {
+    const target = this.scene.getObjectByName('Floor');
+    this.adjustFOVToObject(target, Math.abs(Math.sin(this.clock.getElapsedTime())) * 75)
   }
 
   /**
