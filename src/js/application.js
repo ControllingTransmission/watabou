@@ -5,7 +5,7 @@ import bindKeys from "./keys.js";
 
 import * as Detector from "../js/vendor/Detector";
 import * as DAT from "../js/vendor/dat.gui.min";
-import * as checkerboard from "../textures/checkerboard.jpg";
+import * as checkerboard from "../textures/forest/federico-bottos-415776-unsplash.jpg";
 import * as star from "../textures/star.png";
 import * as vertexShader from "../glsl/vertexShader.glsl";
 import * as fragmentShader from "../glsl/fragmentShader.glsl";
@@ -14,6 +14,7 @@ const CAMERA_NAME = "Perspective Camera";
 const DIRECTIONAL_LIGHT_NAME = "Directional Light";
 const SPOT_LIGHT_NAME = "Spotlight";
 const CUSTOM_MESH_NAME = "Custom Mesh";
+const MAX_FOV = 75;
 
 export class Application {
   constructor(opts = {}) {
@@ -53,12 +54,12 @@ export class Application {
     this.setupCamera();
     const interaction = new Interaction(this.renderer, this.scene, this.camera);
     this.setupLights();
-    if (this.showHelpers) {
-      this.setupHelpers();
-    }
+    // if (this.showHelpers) {
+    //   this.setupHelpers();
+    // }
     this.setupGUI();
 
-    this.addFloor(100, 100);
+    this.addBackground(100, 100);
   }
 
   render() {
@@ -96,6 +97,7 @@ export class Application {
     this.camera.aspect = clientWidth / clientHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(clientWidth, clientHeight);
+    this.fillScreenWithObjectByFOV(this.scene.getObjectByName('Background'), this.camera.fov);
   }
 
   setupClock() {
@@ -175,7 +177,7 @@ export class Application {
 
   setupHelpers() {
     const gridHelper = new THREE.GridHelper(200, 16);
-    gridHelper.name = "Floor GridHelper";
+    gridHelper.name = "Background GridHelper";
     this.scene.add(gridHelper);
 
     // XYZ axes helper (XYZ axes are RGB colors, respectively)
@@ -207,26 +209,25 @@ export class Application {
   }
 
   /**
-   * Add a floor object to the scene.
+   * Add a background object to the scene.
    * Note: Three.js's TextureLoader does not support progress events.
    * @see https://threejs.org/docs/#api/en/loaders/TextureLoader
    */
-  addFloor(width, height) {
+  addBackground(width, height) {
     const geometry = new THREE.PlaneGeometry(width, height, 1, 1);
     const onLoad = texture => {
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(4, 4);
       const material = new THREE.MeshBasicMaterial({
         map: texture,
         side: THREE.DoubleSide,
       });
-      const floor = new THREE.Mesh(geometry, material);
-      floor.name = "Floor";
-      floor.position.y = -0.5;
-      this.scene.add(floor);
+      const background = new THREE.Mesh(geometry, material);
+      background.name = "Background";
+      background.rotation.z = THREE.Math.degToRad(180);
+      this.scene.add(background);
 
-      floor.cursor = "pointer";
+      background.cursor = "pointer";
+
+      this.fillScreenWithObjectByFOV(background, 1);
     };
 
     const onProgress = undefined;
@@ -237,9 +238,22 @@ export class Application {
     this.textureLoader.load(checkerboard, onLoad, onProgress, onError);
   }
 
-  adjustFOVToObject(object, fov) {
+  adjustDistanceToObjectByFOV(object, fov) {
     let o = object.geometry.parameters.width / 2;
-    let a = o / Math.tan(fov / 75 / 2);
+    let a = o / Math.tan(fov / MAX_FOV);
+
+    this.camera.fov = fov;
+    this.camera.position.z = a;
+    this.camera.updateProjectionMatrix();
+  }
+
+  fillScreenWithObjectByFOV(object, fov) {
+    const { clientWidth, clientHeight } = this.container;
+    const aspect = clientWidth / clientHeight;
+
+    let o = object.geometry.parameters.width / 2 / aspect;
+
+    let a = o / Math.tan(fov / MAX_FOV);
 
     this.camera.fov = fov;
     this.camera.position.z = a;
@@ -309,8 +323,8 @@ export class Application {
   }
 
   updateFOV() {
-    const target = this.scene.getObjectByName('Floor');
-    this.adjustFOVToObject(target, Math.abs(Math.sin(this.clock.getElapsedTime())) * 75)
+    const target = this.scene.getObjectByName('Background');
+    this.adjustDistanceToObjectByFOV(target, Math.abs(Math.sin(this.clock.getElapsedTime())) * MAX_FOV)
   }
 
   /**
