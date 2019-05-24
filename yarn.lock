@@ -526,6 +526,10 @@
     lodash "^4.17.11"
     to-fast-properties "^2.0.0"
 
+"@johh/three-effectcomposer@^0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@johh/three-effectcomposer/-/three-effectcomposer-0.0.6.tgz#646a73a8d869e1443a19805abb6ea9d6f03dd608"
+
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/@mrmlnc/readdir-enhanced/-/readdir-enhanced-2.2.1.tgz#524af240d1a360527b730475ecfa1344aa540dde"

@@ -1,4 +1,15 @@
-import * as THREE from "three";
+import * as THREE from "three"
+import EffectComposer, {
+  Pass,
+  RenderPass,
+  ShaderPass,
+  TexturePass,
+  ClearPass,
+  MaskPass,
+  ClearMaskPass,
+  CopyShader,
+} from '@johh/three-effectcomposer';
+
 // TODO: OrbitControls import three.js on its own, so the webpack bundle includes three.js twice!
 import { Interaction } from "three.interaction";
 import bindKeys from "./keys.js";
@@ -7,8 +18,12 @@ import * as Detector from "../js/vendor/Detector";
 import * as DAT from "../js/vendor/dat.gui.min";
 import * as checkerboard from "../textures/forest/federico-bottos-415776-unsplash.jpg";
 import * as star from "../textures/star.png";
-import * as vertexShader from "../glsl/vertexShader.glsl";
-import * as fragmentShader from "../glsl/fragmentShader.glsl";
+
+// TODO: Replace all this with loading all the files and sticking em in a hash
+import * as vertexPixelate from "../glsl/pixelate/vertexShader.glsl";
+import * as fragmentPixelate from "../glsl/pixelate/fragmentShader.glsl";
+import * as vertexBlackAndWhite from "../glsl/blackandwhite/vertexShader.glsl";
+import * as fragmentBlackAndWhite from "../glsl/blackandwhite/fragmentShader.glsl";
 
 const CAMERA_NAME = "Perspective Camera";
 const DIRECTIONAL_LIGHT_NAME = "Directional Light";
@@ -54,6 +69,8 @@ export class Application {
     this.setupCamera();
     const interaction = new Interaction(this.renderer, this.scene, this.camera);
     this.setupLights();
+    this.setupUniforms();
+    this.setupEffectComposer();
     // if (this.showHelpers) {
     //   this.setupHelpers();
     // }
@@ -64,7 +81,8 @@ export class Application {
 
   render() {
     // this.updateCustomMesh();
-    this.renderer.render(this.scene, this.camera);
+    this.updateUniforms();
+    this.composer.render(this.scene, this.camera);
     // when render is invoked via requestAnimationFrame(this.render) there is
     // no 'this', so either we bind it explicitly or use an es6 arrow function.
     // requestAnimationFrame(this.render.bind(this));
@@ -208,6 +226,82 @@ export class Application {
     this.scene.add(spotLightCameraHelper);
   }
 
+  setupUniforms() {
+    // Define shader variables
+    this.pixelSize = 5.0;
+    this.threshold = 1.0;
+
+    // Define the shader uniforms
+    this.uniforms = {
+      u_time : {
+        type : "f",
+        value : 0.0
+      },
+      u_frame : {
+        type : "f",
+        value : 0.0
+      },
+      u_resolution : {
+        type : "v2",
+        value : new THREE.Vector2(window.innerWidth, window.innerHeight)
+            .multiplyScalar(window.devicePixelRatio)
+      },
+      u_mouse : {
+        type : "v2",
+        value : new THREE.Vector2(0.7 * window.innerWidth, window.innerHeight)
+            .multiplyScalar(window.devicePixelRatio)
+      },
+      u_texture : {
+        type : "t",
+        value : null
+      },
+      u_pixelsize: {
+        type: 'f',
+        value: this.pixelSize
+      },
+      u_threshold: {
+        type: 'f',
+        value: this.threshold
+      },
+    };
+  }
+
+  updateUniforms() {
+    this.uniforms.u_pixelsize.value = this.pixelSize;
+    this.uniforms.u_threshold.value = this.threshold;
+  }
+
+  setupEffectComposer() {
+    // Initialize the effect composer
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+
+    // Create the shader material
+    var material2 = new THREE.ShaderMaterial({
+      uniforms: this.uniforms,
+      vertexShader: vertexBlackAndWhite,
+      fragmentShader: fragmentBlackAndWhite
+    });
+
+    // Add the post-processing effect
+    this.effect2 = new ShaderPass(material2);
+    this.effect2.renderToScreen = false;
+    this.effect2.needsSwap = true;
+    this.composer.addPass(this.effect2);
+
+    // Create the shader material
+    var material = new THREE.ShaderMaterial({
+      uniforms: this.uniforms,
+      vertexShader: vertexPixelate,
+      fragmentShader: fragmentPixelate
+    });
+
+    // Add the post-processing effect
+    this.effect = new ShaderPass(material, "u_texture");
+    this.effect.renderToScreen = true;
+    this.composer.addPass(this.effect);
+  }
+
   /**
    * Add a background object to the scene.
    * Note: Three.js's TextureLoader does not support progress events.
@@ -215,19 +309,22 @@ export class Application {
    */
   addBackground(width, height) {
     const geometry = new THREE.PlaneGeometry(width, height, 1, 1);
+    const material = new THREE.MeshBasicMaterial({
+      side: THREE.DoubleSide,
+    });
+    const background = new THREE.Mesh(geometry, material);
+    background.name = "Background";
+    background.rotation.z = THREE.Math.degToRad(180);
+    this.scene.add(background);
+
+    background.cursor = "pointer";
+
+    this.fillScreenWithObjectByFOV(background, 1);
+
     const onLoad = texture => {
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        side: THREE.DoubleSide,
-      });
-      const background = new THREE.Mesh(geometry, material);
-      background.name = "Background";
-      background.rotation.z = THREE.Math.degToRad(180);
-      this.scene.add(background);
-
-      background.cursor = "pointer";
-
-      this.fillScreenWithObjectByFOV(background, 1);
+      let material = this.scene.getObjectByName('Background').material;
+      material.map = texture;
+      material.needsUpdate = true;
     };
 
     const onProgress = undefined;
@@ -263,63 +360,15 @@ export class Application {
   setupGUI() {
     const gui = new DAT.GUI();
     gui
-      .add(this.camera, "fov")
-      .name("Camera FOV")
-      .min(0)
-      .max(100)
-      .onChange(() => { this.camera.updateProjectionMatrix() });
+      .add(this, "pixelSize")
+      .name("Pixel Size")
+      .min(1)
+      .max(100);
     gui
-      .add(this.camera.position, "z")
-      .name("Camera Z")
-      .min(1000)
-      .max(10000);
-  }
-
-  /**
-   * Create an object that uses custom shaders.
-   */
-  addCustomMesh() {
-    this.delta = 0;
-    const customUniforms = {
-      delta: { value: 0 },
-    };
-
-    const material = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: customUniforms,
-    });
-
-    const geometry = new THREE.SphereBufferGeometry(5, 32, 32);
-
-    this.vertexDisplacement = new Float32Array(
-      geometry.attributes.position.count
-    );
-    for (let i = 0; i < this.vertexDisplacement.length; i += 1) {
-      this.vertexDisplacement[i] = Math.sin(i);
-    }
-
-    geometry.addAttribute(
-      "vertexDisplacement",
-      new THREE.BufferAttribute(this.vertexDisplacement, 1)
-    );
-
-    const customMesh = new THREE.Mesh(geometry, material);
-    customMesh.name = CUSTOM_MESH_NAME;
-    customMesh.position.set(5, 5, 5);
-    this.scene.add(customMesh);
-  }
-
-  updateCustomMesh() {
-    this.delta += 0.1;
-    const customMesh = this.scene.getObjectByName(CUSTOM_MESH_NAME);
-    customMesh.material.uniforms.delta.value = 0.5 + Math.sin(this.delta) * 0.5;
-    for (let i = 0; i < this.vertexDisplacement.length; i += 1) {
-      this.vertexDisplacement[i] = 0.5 + Math.sin(i + this.delta) * 0.25;
-    }
-    // attribute buffers are not refreshed automatically. To update custom
-    // attributes we need to set the needsUpdate flag to true
-    customMesh.geometry.attributes.vertexDisplacement.needsUpdate = true;
+      .add(this, "threshold")
+      .name("B&W Threshold")
+      .min(0)
+      .max(3.0);
   }
 
   updateFOV() {
