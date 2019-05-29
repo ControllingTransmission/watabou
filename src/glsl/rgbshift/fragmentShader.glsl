@@ -5,6 +5,7 @@ uniform vec2 u_resolution;
 uniform float u_time;
 uniform float u_frame;
 uniform float u_rgbShift;
+uniform float u_rgbAngle;
 
 // Texture uniforms
 uniform sampler2D u_texture;
@@ -17,7 +18,7 @@ varying vec2 v_uv;
  */
 void main() {
     // Calculate the color offset directions
-    float angle = u_time;
+    float angle = u_rgbAngle;
     vec2 red_offset = vec2(cos(angle), sin(angle));
     angle += radians(120.0);
     vec2 green_offset = vec2(cos(angle), sin(angle));
@@ -28,7 +29,7 @@ void main() {
     float offset_size = 0.1 * length(gl_FragCoord.xy - 0.5 * u_resolution);
 
     // Scale the offset size by the relative mouse position
-    offset_size *= u_rgbShift / u_resolution.x;
+    offset_size *= u_rgbShift;
 
     // Extract the pixel color values from the input texture
     float red = texture2D(u_texture, v_uv - offset_size * red_offset / u_resolution).r;

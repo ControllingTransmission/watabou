@@ -32,10 +32,14 @@ importAll(require.context('../textures/forest', true, /\.jpg$/));
 // TODO: Replace all this with loading all the files and sticking em in a hash
 import * as vertexPixelate from "../glsl/pixelate/vertexShader.glsl";
 import * as fragmentPixelate from "../glsl/pixelate/fragmentShader.glsl";
-import * as vertexBlackAndWhite from "../glsl/blackandwhite/vertexShader.glsl";
-import * as fragmentBlackAndWhite from "../glsl/blackandwhite/fragmentShader.glsl";
+// import * as vertexBlackAndWhite from "../glsl/blackandwhite/vertexShader.glsl";
+// import * as fragmentBlackAndWhite from "../glsl/blackandwhite/fragmentShader.glsl";
+import * as vertexBalancedThreshold from "../glsl/balancedthreshold/vertexShader.glsl";
+import * as fragmentBalancedThreshold from "../glsl/balancedthreshold/fragmentShader.glsl";
 import * as vertexRGBShift from "../glsl/rgbshift/vertexShader.glsl";
 import * as fragmentRGBShift from "../glsl/rgbshift/fragmentShader.glsl";
+
+import { AnimationEffect } from './effects'
 
 const CAMERA_NAME = "Perspective Camera";
 const DIRECTIONAL_LIGHT_NAME = "Directional Light";
@@ -75,6 +79,8 @@ export class Application {
 
   init() {
     window.addEventListener("resize", this.handleResize);
+    document.body.addEventListener("keydown", (event) => this.onKeyDown(event), false);
+    document.body.addEventListener("keyup", (event) => this.onKeyUp(event), false);
     this.setupClock();
     this.setupScene();
     this.setupRenderer();
@@ -83,6 +89,7 @@ export class Application {
     this.setupLights();
     this.setupUniforms();
     this.setupEffectComposer();
+    this.keyboard = {};
     // if (this.showHelpers) {
     //   this.setupHelpers();
     // }
@@ -211,10 +218,34 @@ export class Application {
 
   setupUniforms() {
     // Define shader variables
-    this.pixelSize = 1.0;
-    this.threshold = 1.0;
-    this.thresholdSpeed = 1.0;
-    this.rgbShift = 200.0;
+    this.pixelate = new AnimationEffect({
+      name: 'pixelation',
+      value: 1.0,
+      speed: 1,
+      minValue: 1.0,
+      maxValue: 100.0
+    });;
+    this.threshold = new AnimationEffect({
+      name: 'balanced threshold',
+      value: 0.5,
+      speed: 1,
+      minValue: 0.0,
+      maxValue: 1.0
+    });
+    this.rgbShift = new AnimationEffect({
+      name: 'rgbShift',
+      value: 0.0,
+      speed: 1,
+      minValue: 0.0,
+      maxValue: 1.0
+    });
+    this.rgbAngle = new AnimationEffect({
+      name: 'rgbAngle',
+      value: 0.0,
+      speed: 1,
+      minValue: 0.0,
+      maxValue: 1000.0
+    });
 
     // Define the shader uniforms
     this.uniforms = {
@@ -242,29 +273,30 @@ export class Application {
       },
       u_pixelsize: {
         type: 'f',
-        value: this.pixelSize
+        value: this.pixelate.value
       },
       u_threshold: {
         type: 'f',
-        value: this.threshold
-      },
-      u_thresholdSpeed: {
-        type: 'f',
-        value: this.thresholdSpeed
+        value: this.threshold.value
       },
       u_rgbShift: {
         type: 'f',
-        value: this.rgbShift
+        value: this.rgbShift.value
+      },
+      u_rgbAngle: {
+        type: 'f',
+        value: this.rgbAngle.value
       },
     };
   }
 
   updateUniforms() {
-    this.uniforms.u_time.value = this.clock.getElapsedTime();
-    this.uniforms.u_pixelsize.value = this.pixelSize;
-    this.uniforms.u_threshold.value = this.threshold;
-    this.uniforms.u_thresholdSpeed.value = this.thresholdSpeed;
-    this.uniforms.u_rgbShift.value = this.rgbShift;
+    const time = this.clock.getElapsedTime();
+    this.uniforms.u_time.value = time;
+    this.uniforms.u_pixelsize.value = this.pixelate.update();
+    this.uniforms.u_threshold.value = this.threshold.update();
+    this.uniforms.u_rgbShift.value = this.rgbShift.update();
+    this.uniforms.u_rgbAngle.value = this.rgbAngle.update();
   }
 
   setupEffectComposer() {
@@ -275,8 +307,8 @@ export class Application {
     // Create the shader material
     var material2 = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
-      vertexShader: vertexBlackAndWhite,
-      fragmentShader: fragmentBlackAndWhite
+      vertexShader: vertexBalancedThreshold,
+      fragmentShader: fragmentBalancedThreshold
     });
 
     // Add the post-processing effect
@@ -314,6 +346,16 @@ export class Application {
     this.composer.addPass(this.effect);
   }
 
+  onKeyUp(event) {
+      const char = String.fromCharCode(event.keyCode)
+      this.keyboard[char] = false
+  }
+
+  onKeyDown(event) {
+      const char = String.fromCharCode(event.keyCode)
+      this.keyboard[char] = true
+  }
+
   /**
    * Add a background object to the scene.
    * Note: Three.js's TextureLoader does not support progress events.
@@ -348,6 +390,8 @@ export class Application {
     this.textureLoader.load(loadingImage, onLoad, onProgress, onError);
   }
 
+
+
   setupImages() {
     this.textures = [];
     const onLoad = texture => {
@@ -355,6 +399,7 @@ export class Application {
       material.map = texture;
       material.needsUpdate = true;
       this.textures.push(texture);
+      material.textureIndex = this.textures.length - 1;
     };
 
     const onProgress = undefined;
@@ -395,7 +440,7 @@ export class Application {
   setupGUI() {
     const gui = new DAT.GUI();
     gui
-      .add(this, "pixelSize")
+      .add(this, "pixelate")
       .name("Pixel Size")
       .min(1)
       .max(100);
@@ -454,27 +499,4 @@ export class Application {
     const yScreen = yRelativePx + offsetTop;
     return [xScreen, yScreen];
   }
-}
-
-function makeParticle(d, i) {
-  const particle = new THREE.Vector3();
-  particle.x = THREE.Math.randFloatSpread(d.spread.x);
-  particle.y = THREE.Math.randFloatSpread(d.spread.y);
-  particle.z = THREE.Math.randFloatSpread(d.spread.z);
-  return particle;
-}
-
-function makeMesh(d, i) {
-  const material = new THREE.MeshLambertMaterial({
-    color: Math.random() * 0xffffff,
-  });
-  const mesh = new THREE.Mesh(d.geometry, material);
-  mesh.name = `Box ${i} in GroupObject`;
-  mesh.position.x = THREE.Math.randFloatSpread(d.spread.x);
-  mesh.position.y = THREE.Math.randFloatSpread(d.spread.y);
-  mesh.position.z = THREE.Math.randFloatSpread(d.spread.z);
-  mesh.rotation.x = Math.random() * 360 * (Math.PI / 180);
-  mesh.rotation.y = Math.random() * 360 * (Math.PI / 180);
-  mesh.rotation.z = Math.random() * 360 * (Math.PI / 180);
-  return mesh;
 }
