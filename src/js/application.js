@@ -16,14 +16,26 @@ import bindKeys from "./keys.js";
 
 import * as Detector from "../js/vendor/Detector";
 import * as DAT from "../js/vendor/dat.gui.min";
-import * as checkerboard from "../textures/forest/federico-bottos-415776-unsplash.jpg";
-import * as star from "../textures/star.png";
+
+
+
+const forestImages = {};
+
+function importAll (r) {
+  r.keys().forEach(key => forestImages[key] = r(key));
+}
+
+importAll(require.context('../textures/forest', true, /\.jpg$/));
+
+// import * as checkerboard from "../textures/forest/federico-bottos-415776-unsplash.jpg";
 
 // TODO: Replace all this with loading all the files and sticking em in a hash
 import * as vertexPixelate from "../glsl/pixelate/vertexShader.glsl";
 import * as fragmentPixelate from "../glsl/pixelate/fragmentShader.glsl";
 import * as vertexBlackAndWhite from "../glsl/blackandwhite/vertexShader.glsl";
 import * as fragmentBlackAndWhite from "../glsl/blackandwhite/fragmentShader.glsl";
+import * as vertexRGBShift from "../glsl/rgbshift/vertexShader.glsl";
+import * as fragmentRGBShift from "../glsl/rgbshift/fragmentShader.glsl";
 
 const CAMERA_NAME = "Perspective Camera";
 const DIRECTIONAL_LIGHT_NAME = "Directional Light";
@@ -74,9 +86,10 @@ export class Application {
     // if (this.showHelpers) {
     //   this.setupHelpers();
     // }
-    this.setupGUI();
+    // this.setupGUI();
 
-    this.addBackground(100, 100);
+    this.setupImages();
+    this.addForeground(100, 100);
   }
 
   render() {
@@ -115,7 +128,9 @@ export class Application {
     this.camera.aspect = clientWidth / clientHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(clientWidth, clientHeight);
-    this.fillScreenWithObjectByFOV(this.scene.getObjectByName('Background'), this.camera.fov);
+    for (let child in this.scene.children) {
+      this.fillScreenWithObjectByFOV(child, this.camera.fov);
+    }
   }
 
   setupClock() {
@@ -151,6 +166,7 @@ export class Application {
     // this.renderer.setClearColor(0xd3d3d3);  // it's a light gray
     this.renderer.setClearColor(0x222222); // it's a dark gray
     this.renderer.setPixelRatio(window.devicePixelRatio || 1);
+    this.renderer.PreserveDrawingBuffer = true
     const { clientWidth, clientHeight } = this.container;
     this.renderer.setSize(clientWidth, clientHeight);
     this.renderer.shadowMap.enabled = true;
@@ -193,43 +209,12 @@ export class Application {
     this.scene.add(ambientLight);
   }
 
-  setupHelpers() {
-    const gridHelper = new THREE.GridHelper(200, 16);
-    gridHelper.name = "Background GridHelper";
-    this.scene.add(gridHelper);
-
-    // XYZ axes helper (XYZ axes are RGB colors, respectively)
-    const axesHelper = new THREE.AxesHelper(75);
-    axesHelper.name = "XYZ AzesHelper";
-    this.scene.add(axesHelper);
-
-    const dirLight = this.scene.getObjectByName(DIRECTIONAL_LIGHT_NAME);
-
-    const dirLightHelper = new THREE.DirectionalLightHelper(dirLight, 10);
-    dirLightHelper.name = `${DIRECTIONAL_LIGHT_NAME} Helper`;
-    this.scene.add(dirLightHelper);
-
-    const dirLightCameraHelper = new THREE.CameraHelper(dirLight.shadow.camera);
-    dirLightCameraHelper.name = `${DIRECTIONAL_LIGHT_NAME} Shadow Camera Helper`;
-    this.scene.add(dirLightCameraHelper);
-
-    const spotLight = this.scene.getObjectByName(SPOT_LIGHT_NAME);
-
-    const spotLightHelper = new THREE.SpotLightHelper(spotLight);
-    spotLightHelper.name = `${SPOT_LIGHT_NAME} Helper`;
-    this.scene.add(spotLightHelper);
-
-    const spotLightCameraHelper = new THREE.CameraHelper(
-      spotLight.shadow.camera
-    );
-    spotLightCameraHelper.name = `${SPOT_LIGHT_NAME} Shadow Camera Helper`;
-    this.scene.add(spotLightCameraHelper);
-  }
-
   setupUniforms() {
     // Define shader variables
-    this.pixelSize = 5.0;
+    this.pixelSize = 1.0;
     this.threshold = 1.0;
+    this.thresholdSpeed = 1.0;
+    this.rgbShift = 200.0;
 
     // Define the shader uniforms
     this.uniforms = {
@@ -263,12 +248,23 @@ export class Application {
         type: 'f',
         value: this.threshold
       },
+      u_thresholdSpeed: {
+        type: 'f',
+        value: this.thresholdSpeed
+      },
+      u_rgbShift: {
+        type: 'f',
+        value: this.rgbShift
+      },
     };
   }
 
   updateUniforms() {
+    this.uniforms.u_time.value = this.clock.getElapsedTime();
     this.uniforms.u_pixelsize.value = this.pixelSize;
     this.uniforms.u_threshold.value = this.threshold;
+    this.uniforms.u_thresholdSpeed.value = this.thresholdSpeed;
+    this.uniforms.u_rgbShift.value = this.rgbShift;
   }
 
   setupEffectComposer() {
@@ -284,10 +280,24 @@ export class Application {
     });
 
     // Add the post-processing effect
-    this.effect2 = new ShaderPass(material2);
+    this.effect2 = new ShaderPass(material2, "u_texture");
     this.effect2.renderToScreen = false;
     this.effect2.needsSwap = true;
     this.composer.addPass(this.effect2);
+
+    // Create the shader material
+    var material3 = new THREE.ShaderMaterial({
+      uniforms: this.uniforms,
+      vertexShader: vertexRGBShift,
+      fragmentShader: fragmentRGBShift
+    });
+
+    // Add the post-processing effect
+    this.effect3 = new ShaderPass(material3, "u_texture");
+    this.effect3.renderToScreen = false;
+    this.effect3.needsSwap = true;
+    this.composer.addPass(this.effect3);
+
 
     // Create the shader material
     var material = new THREE.ShaderMaterial({
@@ -299,6 +309,8 @@ export class Application {
     // Add the post-processing effect
     this.effect = new ShaderPass(material, "u_texture");
     this.effect.renderToScreen = true;
+    this.effect.needsSwap = true;
+    // this.effect.clear = false;
     this.composer.addPass(this.effect);
   }
 
@@ -307,32 +319,55 @@ export class Application {
    * Note: Three.js's TextureLoader does not support progress events.
    * @see https://threejs.org/docs/#api/en/loaders/TextureLoader
    */
-  addBackground(width, height) {
+  addForeground(width, height) {
     const geometry = new THREE.PlaneGeometry(width, height, 1, 1);
     const material = new THREE.MeshBasicMaterial({
       side: THREE.DoubleSide,
     });
-    const background = new THREE.Mesh(geometry, material);
-    background.name = "Background";
-    background.rotation.z = THREE.Math.degToRad(180);
-    this.scene.add(background);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = "Foreground";
+    mesh.rotation.z = THREE.Math.degToRad(180);
+    this.scene.add(mesh);
 
-    background.cursor = "pointer";
+    mesh.cursor = "pointer";
 
-    this.fillScreenWithObjectByFOV(background, 1);
+    this.fillScreenWithObjectByFOV(mesh, 1);
 
     const onLoad = texture => {
-      let material = this.scene.getObjectByName('Background').material;
+      let material = this.scene.getObjectByName('Foreground').material;
       material.map = texture;
       material.needsUpdate = true;
     };
 
     const onProgress = undefined;
 
+    const loadingImage = forestImages[Object.keys(forestImages)[13]];
     const onError = event => {
-      alert(`Impossible to load the texture ${checkerboard}`);
+      alert(`Impossible to load the texture ${loadingImage}`);
     };
-    this.textureLoader.load(checkerboard, onLoad, onProgress, onError);
+    this.textureLoader.load(loadingImage, onLoad, onProgress, onError);
+  }
+
+  setupImages() {
+    this.textures = [];
+    const onLoad = texture => {
+      let material = this.scene.getObjectByName('Foreground').material;
+      material.map = texture;
+      material.needsUpdate = true;
+      this.textures.push(texture);
+    };
+
+    const onProgress = undefined;
+
+    const onError = event => {
+      alert(`Impossible to load the texture ${loadingImage}`);
+    };
+
+    for (var i = 0; i < Object.keys(forestImages).length; i++) {
+      console.log(forestImages[Object.keys(forestImages)[i]]);
+      let loadingImage = forestImages[Object.keys(forestImages)[i]];
+      this.textureLoader.load(loadingImage, onLoad, onProgress, onError);
+    }
   }
 
   adjustDistanceToObjectByFOV(object, fov) {
@@ -372,7 +407,7 @@ export class Application {
   }
 
   updateFOV() {
-    const target = this.scene.getObjectByName('Background');
+    const target = this.scene.getObjectByName('Foreground');
     this.adjustDistanceToObjectByFOV(target, Math.abs(Math.sin(this.clock.getElapsedTime())) * MAX_FOV)
   }
 

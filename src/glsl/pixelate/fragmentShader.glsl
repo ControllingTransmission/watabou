@@ -18,6 +18,7 @@ varying vec2 v_uv;
 void main() {
   // Calculate the square size in pixel units based on the mouse position
   float square_size = u_pixelsize;
+  // float square_size = float(abs(sin(u_time / 5.0))) * 10.0;
 
   // Calculate the square center and corners
   vec2 center = square_size * floor(v_uv * u_resolution / square_size) + square_size * vec2(0.5, 0.5);

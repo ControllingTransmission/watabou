@@ -5,6 +5,7 @@ uniform vec2 u_mouse;
 uniform float u_time;
 uniform float u_frame;
 uniform float u_threshold;
+uniform float u_thresholdSpeed;
 
 // Texture uniforms
 uniform sampler2D u_texture;
@@ -19,7 +20,11 @@ void main() {
   float g = texture2D(u_texture, v_uv).g;
   float b = texture2D(u_texture, v_uv).b;
 
-  if (r + g + b > u_threshold) {
+  float thresh = u_threshold;
+  if (thresh < 0.0) {
+    thresh = abs(sin(u_time * u_thresholdSpeed)) + 0.4;
+  }
+  if (r + g + b > thresh) {
     gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
   }
   else {
