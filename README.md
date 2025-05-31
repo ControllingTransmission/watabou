@@ -1,10 +1,19 @@
-# three.js-es6-webpack-starter
+# Watabou Visuals
 
-[![Build Status](https://travis-ci.org/jackdbd/threejs-es6-webpack-starter.svg?branch=master)](https://travis-ci.org/jackdbd/threejs-es6-webpack-starter) [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovateapp.com/) [![Code style prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+A Three.js visualization application featuring interactive visual effects and shader manipulations.
 
-A minimal three.js ES6 starter project that uses webpack.
+**[🚀 Live Demo](https://controllingtransmission.github.io/watabou/)**
 
-![A GIF file showing a demo of the starter project](https://github.com/jackdbd/threejs-es6-webpack-starter/blob/master/demo.gif "A scene with a spotlight, a directional light, an ambient light, a particle system, a custom material and several helpers.")
+![A GIF file showing a demo of Watabou Visuals](https://github.com/ControllingTransmission/watabou/blob/master/demo.gif "Interactive Three.js visualization with lighting effects, particle systems, and custom shaders.")
+
+## About
+
+Watabou Visuals is an interactive Three.js application that showcases:
+- Real-time shader effects (pixelation, RGB shift, threshold effects)
+- Dynamic lighting with spotlights, directional lights, and ambient lighting
+- Particle systems with custom materials
+- Interactive controls via keyboard and mouse
+- Various forest textures and visual compositions
 
 ## Features
 
@@ -31,8 +40,8 @@ A minimal three.js ES6 starter project that uses webpack.
 ## Installation
 
 ```shell
-git clone git@github.com:jackdbd/threejs-es6-webpack-starter.git
-cd threejs-es6-webpack-starter
+git clone git@github.com:ControllingTransmission/watabou.git
+cd watabou
 yarn
 ```
 
@@ -48,11 +57,17 @@ Go to `localhost:8080` to see your project live!
 
 ## Usage (production)
 
-Generate all js/css bundles
+Generate all js/css bundles:
 
 ```shell
 yarn build
 ```
+
+The built files will be in the `build/` directory, ready for deployment.
+
+### GitHub Pages Deployment
+
+This project automatically deploys to GitHub Pages via GitHub Actions. Every push to the `master` branch triggers a build and deployment to `https://controllingtransmission.github.io/watabou/`.
 
 ## Other
 

@@ -1,9 +1,9 @@
 {
-  "name": "threejs-es6-webpack-starter",
-  "description": "A starter project for Three.js with support for ES6 and Webpack 4",
-  "author": "jackdbd <jackdebidda@gmail.com> (http://www.giacomodebidda.com/)",
-  "homepage": "https://jackdbd.github.io/threejs-es6-webpack-starter",
-  "repository": "git@github.com:jackdbd/threejs-es6-webpack-starter.git",
+  "name": "watabou",
+  "description": "Watabou Visuals - A Three.js visualization application",
+  "author": "ControllingTransmission",
+  "homepage": "https://controllingtransmission.github.io/watabou",
+  "repository": "git@github.com:ControllingTransmission/watabou.git",
   "version": "5.0.0",
   "main": "./src/js/index.js",
   "license": "MIT",
@@ -73,6 +73,6 @@
     "webgl"
   ],
   "bugs": {
-    "url": "https://github.com/jackdbd/threejs-es6-webpack-starter/issues"
+    "url": "https://github.com/ControllingTransmission/watabou/issues"
   }
 }
