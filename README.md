@@ -15,6 +15,32 @@ Watabou Visuals is an interactive Three.js application that showcases:
 - Interactive controls via keyboard and mouse
 - Various forest textures and visual compositions
 
+## Keyboard Controls
+
+```
+space: randomize texture on foreground
+z + 1: start threshold effect loop
+z + 2: start pixelate effect loop
+z + 3: start RGB shift effect loop
+z + 4: start RGB angle effect loop
+x + 1: stop threshold effect
+x + 2: stop pixelate effect
+x + 3: stop RGB shift effect
+x + 4: stop RGB angle effect
+up + 1: increase threshold effect speed
+up + 2: increase pixelate effect speed
+up + 3: increase RGB shift effect speed
+up + 4: increase RGB angle effect speed
+down + 1: decrease threshold effect speed
+down + 2: decrease pixelate effect speed
+down + 3: decrease RGB shift effect speed
+down + 4: decrease RGB angle effect speed
+p + 1: pulse threshold effect
+p + 2: pulse pixelate effect
+p + 3: pulse RGB shift effect
+p + 4: pulse RGB angle effect
+```
+
 ## Features
 
 - ES6 support with [babel-loader](https://github.com/babel/babel-loader)
