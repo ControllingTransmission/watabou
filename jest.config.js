@@ -13,6 +13,7 @@ const config = {
     "\\.(css)$": "<rootDir>/__mocks__/styleMock.js",
   },
   modulePathIgnorePatterns: ["<rootDir>/node_modules/"],
+  setupFiles: ["<rootDir>/setupJest.js"],
   setupFilesAfterEnv: ["<rootDir>/setupJestDomTests.js"],
   testEnvironment: "jsdom",
   testURL: "http://localhost",

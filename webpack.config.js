@@ -118,7 +118,7 @@ module.exports = (env, argv) => {
   console.log(`Prepare ${argv.mode.toUpperCase()} build`);
   const isProduction = argv.mode === "production";
   const PUBLIC_URL = isProduction
-    ? "https://jackdbd.github.io/threejs-es6-webpack-starter"
+    ? "https://controllingtransmission.github.io/watabou"
     : "";
 
   const plugins = [
@@ -160,9 +160,9 @@ module.exports = (env, argv) => {
     }),
     new PacktrackerPlugin({
       branch: process.env.TRAVIS_BRANCH, // https://docs.packtracker.io/faq#why-cant-the-plugin-determine-my-branch-name
-      fail_build: true,
+      fail_build: false, // Don't fail build if packtracker is unavailable
       project_token: "2464bed1-d810-4af6-a615-877420f902b2",
-      upload: process.env.CI === "true", // upload stats.json only in CI
+      upload: process.env.CI === "true" && process.env.PACKTRACKER_ENABLED === "true", // only upload if explicitly enabled
     }),
   ];
 
