@@ -6,6 +6,15 @@ A Three.js visualization application featuring interactive visual effects and sh
 
 ![A GIF file showing a demo of Watabou Visuals](https://github.com/ControllingTransmission/watabou/blob/master/demo.gif "Interactive Three.js visualization with lighting effects, particle systems, and custom shaders.")
 
+## About
+
+Watabou Visuals is an interactive Three.js application that showcases:
+- Real-time shader effects (pixelation, RGB shift, threshold effects)
+- Dynamic lighting with spotlights, directional lights, and ambient lighting
+- Particle systems with custom materials
+- Interactive controls via keyboard and mouse
+- Various forest textures and visual compositions
+
 ## Features
 
 - ES6 support with [babel-loader](https://github.com/babel/babel-loader)
@@ -48,11 +57,17 @@ Go to `localhost:8080` to see your project live!
 
 ## Usage (production)
 
-Generate all js/css bundles
+Generate all js/css bundles:
 
 ```shell
 yarn build
 ```
+
+The built files will be in the `build/` directory, ready for deployment.
+
+### GitHub Pages Deployment
+
+This project automatically deploys to GitHub Pages via GitHub Actions. Every push to the `master` branch triggers a build and deployment to `https://controllingtransmission.github.io/watabou/`.
 
 ## Other
 
